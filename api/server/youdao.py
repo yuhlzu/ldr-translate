@@ -163,7 +163,7 @@ def translate_interface_1(s, from_lang="auto", to_lang=""):
     print(res)
     tmp = ""
     if res['code'] != 0:
-        return ""
+        return s
     trans_res = res.get('translateResult', None)
     if trans_res is not None:
         for line in trans_res:

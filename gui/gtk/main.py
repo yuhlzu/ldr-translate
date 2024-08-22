@@ -14,7 +14,7 @@ import gi
 
 from utils import locales, version, config
 from utils.locales import t_ui
-
+from utils.keybinder import start_keybinder, bind, stop_keybinder, unbind
 from utils.locales import t
 
 try:
@@ -35,7 +35,7 @@ gi.require_version("Gtk", "3.0")
 from ui_translate import Translate
 from preferences import Preference
 
-from gi.repository import Gtk, Gdk, GdkPixbuf
+from gi.repository import Gtk, Gdk, GdkPixbuf, GObject
 
 
 def _on_help(event=None, data=None):
@@ -124,6 +124,10 @@ class LdrTranslate(Gtk.Application):
         menu_t_3.connect('activate', self._set_translate_model, 3)
         menu.append(menu_t_3)
 
+        menu_t_4 = Gtk.RadioMenuItem(label=self.tm_s[4], group=menu_t_0)
+        menu_t_4.connect('activate', self._set_translate_model, 4)
+        menu.append(menu_t_4)
+
         menu.add(Gtk.SeparatorMenuItem())
 
         menu_prf = Gtk.MenuItem(label=t_ui("setting_label"))
@@ -150,8 +154,9 @@ class LdrTranslate(Gtk.Application):
             return
 
         # 全部关闭重新来
-        if self.tm == 3:
-            Keybinder.unbind(config.get_config_setting("key_gtk"))
+        if self.tm in (3, 4):
+            unbind(config.get_config_setting("key_gtk"), app.key_binder_callback)
+            stop_keybinder()
 
         if self.handler_id_clip is not None:
             self.get_clipboard().disconnect(self.handler_id_clip)
@@ -161,9 +166,9 @@ class LdrTranslate(Gtk.Application):
         if n in (0, 1):
             self.handler_id_clip = self.get_clipboard().connect(
                 "owner-change", self._active_translate_windows)
-        elif n == 3:
-            Keybinder.bind(config.get_config_setting("key_gtk"),
-                           app.key_binder_callback)
+        elif n in (3, 4):
+            bind(config.get_config_setting("key_gtk"), app.key_binder_callback)
+            start_keybinder()
 
         self.indicator.set_label(self.tm_s[self.tm], "")
 
@@ -178,9 +183,14 @@ class LdrTranslate(Gtk.Application):
             clipboard = None
         self.translate_win.copy_auto_translate(clipboard)
 
-    def key_binder_callback(self, key_group):
-        self._open_translate_windows()
-        self.translate_win.copy_auto_translate(self.clip_copy)
+    def key_binder_callback(self):
+        def gui_callback():
+            self._open_translate_windows()
+            if self.tm == 3:
+                self.translate_win.copy_auto_translate(self.clip_copy)
+            if self.tm == 4:
+                self.translate_win.copy_auto_translate(self.clip_select)
+        GObject.idle_add(gui_callback)
 
     def get_clipboard(self):
         if self.tm == 0:

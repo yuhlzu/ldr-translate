@@ -6,8 +6,8 @@
         "ocr_span": 1.0,
         "ocr_local": false,
         "tray_icon_n": 0,
-        "key_gtk": "<Ctrl><Alt>M",
-	"del_wrapping": true
+        "key_gtk": "<button9>",
+	    "del_wrapping": true
     },
     "baidu": {
         "translate_app_id": "",

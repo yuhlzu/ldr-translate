@@ -1,11 +1,12 @@
 import threading
 
-from gi.repository import Gtk, GLib
+from gi.repository import Gtk, GLib, GObject
 
 from api import translate
 from api.server import baidu, tencent
 from api.server_config import server_baidu, server_tencent, get_api_key
 from utils import config, version
+from utils.keybinder import capture_hotkey
 
 
 def on_cbb_tray_icon(combo):
@@ -114,6 +115,10 @@ class Preference(Gtk.ApplicationWindow):
 
         self.lb_version_msg.set_markup(version.get_default())
 
+        hotkey_text = ui.get_object("hotkey")
+        hotkey_text.get_buffer().set_text(config.get_config_setting("key_gtk"))
+        hotkey_text.connect("button-release-event", self.set_hotkey, None)
+        self.hotkey_set_flag = False
         ui.get_object('btn_update').connect('clicked', self.check_update)
 
         for tray_type in config.get_tray_types():
@@ -121,6 +126,30 @@ class Preference(Gtk.ApplicationWindow):
 
         self.cbb_tray_icon.set_active(config.get_tray_icon_n())
         self.cbb_tray_icon.connect("changed", on_cbb_tray_icon)
+
+    def set_hotkey(self, widget, event, user_data):
+        if event.button == 1 and not self.hotkey_set_flag:
+            print("hotkey flag")
+            widget.get_buffer().set_text("设置热键中...")
+            self.hotkey_set_flag = True
+            def to_str(stat):
+                string = ""
+                for i in stat:
+                    if len(i) == 1:
+                        string += i
+                    else:
+                        string += "<%s>" %i
+                return string
+            
+            def change_text(stat):
+                widget.get_buffer().set_text(to_str(stat))
+            print("start")
+            def do_result(s):
+                config.set_config(config.config_sections_setting, "key_gtk", to_str(s))
+                print("set hotkey %s"% to_str(s))
+                self.hotkey_set_flag = False
+
+            capture_hotkey(lambda s: GObject.idle_add(change_text, s), do_result)
 
     def init_baidu_api(self, ui):
         def set_value(tv, key):

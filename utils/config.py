@@ -60,7 +60,7 @@ def set_config(section, key, value):
     config_data[section][key] = value
     check_dir(app_home_dir)
     with open(config_home_path, 'w') as file:
-        json.dump(config_data, file, ensure_ascii=False)
+        json.dump(config_data, file, ensure_ascii=False, indent=2)
 
 
 def check_dir(dir):
